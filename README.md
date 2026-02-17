@@ -32,10 +32,21 @@ This project is **entirely AI-generated** - not a single line of code was manual
 
 ## Features
 
+### Quick Stats (Menubar)
 ✨ **Live Session Tracking** - Real-time token counter updates as you chat (2 Hz polling)
 📊 **Visual Analytics** - 7-day usage chart with daily breakdown
 💰 **Cost Estimation** - Calculates costs based on Anthropic pricing
 📈 **Dual Monitoring** - Historical stats from cache + live JSONL file monitoring
+
+### Detailed Analytics Window
+📈 **Daily/Monthly Breakdown** - Comprehensive usage tables by day or month
+🤖 **Per-Model Statistics** - See which Claude models you use most (Opus, Sonnet, Haiku)
+💵 **Model-Specific Pricing** - Accurate costs with cache token calculations
+📊 **Interactive Charts** - Visual representation of usage trends
+📝 **Message Counting** - Track number of messages alongside tokens
+🔍 **Deduplication** - Prevents duplicate entries from being counted
+
+### Performance
 ⚡ **Ultra Lightweight** - Uses only 8-15MB RAM with 0% CPU in background
 🔋 **Battery Efficient** - Kernel-level file monitoring (FSEvents) + smart caching
 🎨 **Native UI** - SwiftUI interface with dark mode support
@@ -45,9 +56,13 @@ This project is **entirely AI-generated** - not a single line of code was manual
 
 <div align="center">
 
+### Menubar Quick Stats
 ![Claude Tracker Menubar](.github/screenshots/menubar-live-session.png)
-
 *Real-time token tracking with live session monitoring*
+
+### Detailed Analytics Window
+![Detailed Analytics](.github/screenshots/detailed-analytics.png)
+*Comprehensive analytics with daily/monthly breakdowns and per-model statistics*
 
 </div>
 
@@ -84,7 +99,21 @@ This project is **entirely AI-generated** - not a single line of code was manual
 
 1. **Launch the app** - A Claude C icon appears in your menubar
 2. **Grant file access** - On first launch, select the `.claude` folder in your home directory (press ⌘⇧. to show hidden files)
-3. **Click the icon** - View your token usage statistics in real-time
+3. **Click the icon** - View your quick token usage statistics
+4. **Detailed Analytics** - Click the "Detailed Analytics" button for comprehensive breakdowns
+
+### Quick Stats (Menubar Popover)
+- Live session token tracking (updates every 0.5s)
+- Today's confirmed usage from cache
+- Total usage and cost estimates
+- 7-day usage chart
+- Cache efficiency metrics
+
+### Detailed Analytics Window
+- **Overview**: Summary with charts and top models
+- **Daily**: Day-by-day usage table
+- **Monthly**: Month-by-month aggregation
+- **Models**: Per-model breakdown with costs and percentages
 
 The app runs silently in the menubar and automatically updates when you use Claude Code!
 
@@ -133,12 +162,25 @@ Monitors active conversation JSONL files in `~/.claude/projects/`:
 
 ## Pricing Calculation
 
-Token costs are estimated based on [Anthropic's pricing](https://www.anthropic.com/pricing):
+Token costs are calculated using model-specific pricing based on [Anthropic's pricing](https://www.anthropic.com/pricing):
 
+### Claude 3 Opus / Claude 4 Opus
+- **Input tokens**: $15.00 per 1M tokens
+- **Output tokens**: $75.00 per 1M tokens
+- **Cache writes**: $18.75 per 1M tokens
+- **Cache reads**: $1.50 per 1M tokens
+
+### Claude 3.5 Sonnet / Claude 4 Sonnet (Default)
 - **Input tokens**: $3.00 per 1M tokens
 - **Output tokens**: $15.00 per 1M tokens
 - **Cache writes**: $3.75 per 1M tokens
 - **Cache reads**: $0.30 per 1M tokens
+
+### Claude 3.5 Haiku / Claude 3 Haiku
+- **Input tokens**: $0.25 per 1M tokens
+- **Output tokens**: $1.25 per 1M tokens
+- **Cache writes**: $0.30 per 1M tokens
+- **Cache reads**: $0.03 per 1M tokens
 
 *Note: Costs are estimates and may not reflect your actual billing. Check your Anthropic dashboard for accurate billing information.*
 
@@ -148,13 +190,16 @@ Token costs are estimated based on [Anthropic's pricing](https://www.anthropic.c
 
 ```
 Claude-Tracker/
-├── ClaudeStats.swift          # Data models & JSON parsing
-├── StatsMonitor.swift         # File monitoring & state management
-├── LiveTokenMonitor.swift     # Real-time JSONL conversation tracking
-├── FileAccessManager.swift    # Sandboxed file access
-├── MenuBarView.swift          # SwiftUI UI components
-├── Claude_TrackerApp.swift    # App lifecycle & menubar
-└── Info.plist                 # App configuration
+├── ClaudeStats.swift              # Data models & JSON parsing
+├── StatsMonitor.swift             # File monitoring & state management
+├── LiveTokenMonitor.swift         # Real-time JSONL conversation tracking
+├── FileAccessManager.swift        # Sandboxed file access
+├── MenuBarView.swift              # Menubar popover UI
+├── DetailedAnalyticsView.swift    # Comprehensive analytics window
+├── ModelPricingCalculator.swift   # Model-specific pricing
+├── UsageAggregator.swift          # Daily/monthly aggregation
+├── Claude_TrackerApp.swift        # App lifecycle & window management
+└── Info.plist                     # App configuration
 ```
 
 ### Architecture
@@ -172,10 +217,18 @@ StatsMonitor (ObservableObject) ←──┘
     ↓ FSEvents monitoring
     ↓ Published state (2 data sources)
     ↓
-MenuBarPopoverView (SwiftUI)
-    ↓ SwiftUI Charts
-    ↓ Live session display
-    ↓ User interface
+MenuBarPopoverView (SwiftUI)        UsageAggregator
+    ↓ SwiftUI Charts                    ↓ Daily/Monthly aggregation
+    ↓ Live session display              ↓ Per-model statistics
+    ↓ Quick stats UI                    ↓ Message counting
+    ↓                                   ↓ Deduplication
+    ↓                                   ↓
+    └───────────────────────────────────┤
+                                        ↓
+                          DetailedAnalyticsView (SwiftUI)
+                                ↓ Tabbed interface
+                                ↓ Charts & Tables
+                                ↓ Model pricing breakdown
 ```
 
 ### Contributing
@@ -196,6 +249,10 @@ Read our [AI-Native Code of Conduct](CODE_OF_CONDUCT.md) to understand our devel
 
 ## Roadmap
 
+- [x] Menubar quick stats with live session tracking
+- [x] Detailed analytics window with daily/monthly breakdowns
+- [x] Per-model statistics and pricing
+- [x] Message counting and deduplication
 - [ ] App Store distribution
 - [ ] Launch at login option
 - [ ] Custom cost thresholds with notifications
@@ -215,6 +272,16 @@ A: This tracks tokens consumed in the active conversation since you opened the m
 **Q: Why are there two token counts?**
 A: "Live Session" shows real-time usage from the current conversation. "Today (Confirmed)" shows verified stats from Claude Code's cache. Live updates immediately; confirmed updates after conversations complete.
 
+**Q: What's in the Detailed Analytics window?**
+A: The detailed analytics provides:
+- **Overview**: Summary cards, charts, and top models by cost
+- **Daily View**: Day-by-day breakdown with model usage
+- **Monthly View**: Month-by-month aggregation for long-term trends
+- **Models Tab**: Per-model statistics with cost percentages and token breakdowns
+
+**Q: How accurate are the per-model costs?**
+A: Very accurate! We use Anthropic's official pricing for each model (Opus, Sonnet, Haiku) including cache token calculations. Costs are calculated per message with model-specific rates.
+
 **Q: Will this work with claude.ai?**
 A: No, this only tracks usage from Claude Code (the CLI tool). claude.ai usage is tracked separately in your Anthropic account.
 
@@ -232,6 +299,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Built **entirely** with Claude Sonnet 4.5 (not a single line manually typed)
 - Human architect: Petr Guan (prompting, testing, reviewing)
+- Inspired by [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) for analytics features
 - Inspired by iStat Menus and other system monitoring tools
 - Thanks to Anthropic for creating Claude and Claude Code
 - A demonstration that AI can generate production-quality, App Store-ready code

@@ -10,6 +10,7 @@ import Charts
 
 struct MenuBarPopoverView: View {
     @ObservedObject var monitor: StatsMonitor
+    var onShowDetails: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -193,6 +194,18 @@ struct MenuBarPopoverView: View {
 
                 Divider()
 
+                // Details button
+                Button(action: onShowDetails) {
+                    HStack {
+                        Image(systemName: "chart.bar.doc.horizontal")
+                        Text("Detailed Analytics")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+
+                Divider()
+
                 // Quit button
                 Button(action: {
                     NSApplication.shared.terminate(nil)
@@ -273,5 +286,5 @@ struct MenuBarPopoverView: View {
 
 #Preview {
     let monitor = StatsMonitor()
-    return MenuBarPopoverView(monitor: monitor)
+    return MenuBarPopoverView(monitor: monitor, onShowDetails: {})
 }

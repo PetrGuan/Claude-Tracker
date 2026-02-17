@@ -24,6 +24,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var monitor: StatsMonitor!
+    private var detailsWindow: NSWindow?
+    private var detailsHostingController: NSHostingController<DetailedAnalyticsView>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize stats monitor
@@ -44,7 +46,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentSize = NSSize(width: 320, height: 480)
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
-            rootView: MenuBarPopoverView(monitor: monitor)
+            rootView: MenuBarPopoverView(monitor: monitor, onShowDetails: { [weak self] in
+                self?.showDetailsWindow()
+            })
         )
 
         print("Claude Tracker loaded successfully")
@@ -101,6 +105,42 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func showDetailsWindow() {
+        // Close popover
+        popover.performClose(nil)
+
+        if let existingWindow = detailsWindow {
+            // Bring existing window to front
+            existingWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
+            // Create hosting controller first and keep a strong reference
+            let hostingController = NSHostingController(rootView: DetailedAnalyticsView())
+            self.detailsHostingController = hostingController
+
+            // Create new window
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.center()
+            window.title = "Claude Token Tracker - Detailed Analytics"
+            window.contentViewController = hostingController
+
+            // Handle window close
+            window.delegate = self
+
+            // Prevent window from being released when closed
+            window.isReleasedWhenClosed = false
+
+            detailsWindow = window
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         // Clean up timers and resources
         monitor.liveTokenMonitor.reset()
@@ -110,5 +150,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         // Allow immediate termination
         return .terminateNow
+    }
+}
+
+// MARK: - NSWindowDelegate
+
+extension AppDelegate: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        if let window = notification.object as? NSWindow, window == detailsWindow {
+            detailsWindow = nil
+            detailsHostingController = nil
+        }
     }
 }
