@@ -43,7 +43,13 @@ This project is **entirely AI-generated** - not a single line of code was manual
 
 ## Screenshots
 
-[Add screenshots here]
+<div align="center">
+
+![Claude Tracker Menubar](.github/screenshots/menubar-live-session.png)
+
+*Real-time token tracking with live session monitoring*
+
+</div>
 
 ## Installation
 
