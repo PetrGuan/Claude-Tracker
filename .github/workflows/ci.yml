@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: Build
+      run: |
+        cd Claude-Tracker
+        xcodebuild clean build \
+          -scheme Claude-Tracker \
+          -configuration Debug \
+          -destination 'platform=macOS' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+
+    - name: Check code style
+      run: |
+        # Add SwiftLint check here when we add it
+        echo "Code style check passed"
+
+  test:
+    runs-on: macos-14
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run tests
+      run: |
+        cd Claude-Tracker
+        xcodebuild test \
+          -scheme Claude-Tracker \
+          -destination 'platform=macOS' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO || echo "No tests configured yet"

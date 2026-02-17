@@ -1,0 +1,50 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Release
+      run: |
+        cd Claude-Tracker
+        xcodebuild -project Claude-Tracker.xcodeproj \
+          -scheme Claude-Tracker \
+          -configuration Release \
+          -derivedDataPath build \
+          CODE_SIGN_IDENTITY="-" \
+          CODE_SIGNING_REQUIRED=NO \
+          clean build
+
+    - name: Create DMG
+      run: |
+        mkdir -p dist
+        cp -R Claude-Tracker/build/Build/Products/Release/Claude-Tracker.app dist/
+        hdiutil create -volname "Claude Tracker" \
+          -srcfolder dist \
+          -ov -format UDZO \
+          Claude-Tracker.dmg
+
+    - name: Upload DMG
+      uses: actions/upload-artifact@v4
+      with:
+        name: Claude-Tracker-DMG
+        path: Claude-Tracker.dmg
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: Claude-Tracker.dmg
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
