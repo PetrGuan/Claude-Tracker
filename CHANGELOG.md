@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First public release of Claude Tracker! All core features are functional and ready for community testing.
 
 ### ✨ Added
-- Real-time token usage monitoring for Claude Code
+- **Live Session Tracking** - Real-time token counter updates as you chat (2 Hz polling)
+- **Dual Monitoring System** - Combines historical stats cache + live JSONL conversation monitoring
+- **Active Conversation Detection** - Automatically finds and tracks the most recently modified conversation
+- **Smart File Caching** - Caches active conversation file path for efficient polling
 - Visual 7-day usage breakdown with charts
 - Cost estimation based on Anthropic API pricing
   - Input tokens: $3.00 per 1M
@@ -29,6 +32,7 @@ First public release of Claude Tracker! All core features are functional and rea
 - Total lifetime usage tracking
 - Cache efficiency metrics (read/write ratio)
 - Menubar-only mode (no dock icon)
+- **Adaptive Polling** - 2 Hz when UI active, 30s in background for battery efficiency
 
 ### 🔒 Security
 - App Sandbox enabled following Apple best practices
@@ -67,6 +71,8 @@ First public release of Claude Tracker! All core features are functional and rea
 - **Minimum macOS**: 13.0 (Ventura)
 - **Architecture**: Apple Silicon + Intel (Universal)
 - **Size**: ~150KB DMG
+- **Monitoring**: Dual-source (stats-cache.json + JSONL conversation files)
+- **Polling**: Adaptive (2 Hz active, 30s background)
 
 ### 🙏 Credits
 - Built entirely with Claude Sonnet 4.5

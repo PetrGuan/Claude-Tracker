@@ -14,6 +14,7 @@ A lightweight, native macOS menubar application for tracking Claude API token us
 *A demonstration of AI-native software development*
 
 📖 **[Read our Philosophy on AI-Native Development →](PHILOSOPHY.md)**
+🔧 **[Technical Documentation →](TECHNICAL.md)**
 
 </div>
 
@@ -31,11 +32,12 @@ This project is **entirely AI-generated** - not a single line of code was manual
 
 ## Features
 
-✨ **Real-time Monitoring** - Automatically tracks token usage from Claude Code
+✨ **Live Session Tracking** - Real-time token counter updates as you chat (2 Hz polling)
 📊 **Visual Analytics** - 7-day usage chart with daily breakdown
 💰 **Cost Estimation** - Calculates costs based on Anthropic pricing
+📈 **Dual Monitoring** - Historical stats from cache + live JSONL file monitoring
 ⚡ **Ultra Lightweight** - Uses only 8-15MB RAM with 0% CPU in background
-🔋 **Battery Efficient** - Kernel-level file monitoring (FSEvents)
+🔋 **Battery Efficient** - Kernel-level file monitoring (FSEvents) + smart caching
 🎨 **Native UI** - SwiftUI interface with dark mode support
 🔒 **Sandboxed** - Follows Apple's security best practices
 
@@ -82,12 +84,26 @@ The app runs silently in the menubar and automatically updates when you use Clau
 
 ## How It Works
 
-Claude Tracker monitors the stats file that Claude Code maintains at `~/.claude/stats-cache.json`. It uses:
+Claude Tracker uses a dual monitoring approach for comprehensive token tracking:
 
+### 1. Historical Stats Monitoring
+Monitors `~/.claude/stats-cache.json` for confirmed usage data:
 - **FSEvents** - Kernel-level file monitoring for zero CPU overhead
-- **Security-Scoped Bookmarks** - Proper sandboxed file access
+- **Auto-refresh** - Updates every 3 seconds for recent stats
+- Displays: Today's usage, total usage, 7-day chart, cache efficiency
+
+### 2. Live Session Tracking
+Monitors active conversation JSONL files in `~/.claude/projects/`:
+- **Real-time updates** - Polls at 2 Hz (0.5s) when UI is open
+- **Smart file detection** - Automatically finds the most recently modified conversation
+- **Session tracking** - Shows tokens consumed since you opened the menubar
+- **Efficient caching** - Caches active file path to avoid directory scanning
+
+### Technical Implementation
+- **Security-Scoped Bookmarks** - Proper sandboxed file access to `.claude` folder
 - **SwiftUI** - Native, efficient UI rendering
 - **DispatchQueue** - Background parsing on utility QoS
+- **Adaptive polling** - 2 Hz active, 30s background to save battery
 
 ### Performance Targets
 
@@ -128,6 +144,7 @@ Token costs are estimated based on [Anthropic's pricing](https://www.anthropic.c
 Claude-Tracker/
 ├── ClaudeStats.swift          # Data models & JSON parsing
 ├── StatsMonitor.swift         # File monitoring & state management
+├── LiveTokenMonitor.swift     # Real-time JSONL conversation tracking
 ├── FileAccessManager.swift    # Sandboxed file access
 ├── MenuBarView.swift          # SwiftUI UI components
 ├── Claude_TrackerApp.swift    # App lifecycle & menubar
@@ -138,17 +155,20 @@ Claude-Tracker/
 
 ```
 FileAccessManager (Singleton)
-    ↓ Security-scoped bookmarks
+    ↓ Security-scoped bookmarks for ~/.claude folder
     ↓
-StatsParser
-    ↓ JSON parsing
-    ↓
-StatsMonitor (ObservableObject)
+StatsParser                      LiveTokenMonitor
+    ↓ JSON parsing                   ↓ JSONL file monitoring
+    ↓                                ↓ Active conversation detection
+    ↓                                ↓ Real-time token counting
+    ↓                                ↓
+StatsMonitor (ObservableObject) ←──┘
     ↓ FSEvents monitoring
-    ↓ Published state
+    ↓ Published state (2 data sources)
     ↓
 MenuBarPopoverView (SwiftUI)
     ↓ SwiftUI Charts
+    ↓ Live session display
     ↓ User interface
 ```
 
@@ -181,13 +201,19 @@ Read our [AI-Native Code of Conduct](CODE_OF_CONDUCT.md) to understand our devel
 ## FAQ
 
 **Q: Why do I need to grant file access?**
-A: The app is sandboxed for security. Security-scoped bookmarks allow safe, persistent access to the stats file.
+A: The app is sandboxed for security. Security-scoped bookmarks allow safe, persistent access to the `.claude` folder (for both stats-cache.json and conversation JSONL files).
+
+**Q: What is "Live Session (Since Opened)"?**
+A: This tracks tokens consumed in the active conversation since you opened the menubar popover. It updates in real-time (every 0.5s) by monitoring the JSONL conversation file.
+
+**Q: Why are there two token counts?**
+A: "Live Session" shows real-time usage from the current conversation. "Today (Confirmed)" shows verified stats from Claude Code's cache. Live updates immediately; confirmed updates after conversations complete.
 
 **Q: Will this work with claude.ai?**
 A: No, this only tracks usage from Claude Code (the CLI tool). claude.ai usage is tracked separately in your Anthropic account.
 
 **Q: Does this affect Claude Code performance?**
-A: No, the app only reads the stats file after Claude Code updates it. No interference with Claude Code operation.
+A: No, the app only reads files that Claude Code writes. No interference with Claude Code operation. Efficient caching minimizes file system overhead.
 
 **Q: Can I use this on Windows/Linux?**
 A: Currently macOS only. A cross-platform version using Tauri could be developed if there's interest.
